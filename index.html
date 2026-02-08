@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF Booklet Maker</title>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 30px; line-height: 1.6; background: #f0f2f5; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        .upload-area { border: 2px dashed #007bff; padding: 20px; text-align: center; cursor: pointer; margin: 20px 0; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        .btn:disabled { background: #ccc; }
+        #status { margin-top: 15px; font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>PDF 小冊子並べ替えツール</h2>
+    <p>1ページ1枚のPDFを、冊子印刷（中綴じ）用の順序に並べ替えます。不足分は自動で白紙を追加します。</p>
+    
+    <div class="upload-area" onclick="document.getElementById('pdfInput').click()">
+        PDFファイルを選択、またはドラッグ＆ドロップ
+        <input type="file" id="pdfInput" accept="application/pdf" style="display:none">
+    </div>
+    
+    <button id="processBtn" class="btn" disabled>PDFを処理してダウンロード</button>
+    
+    <div id="status"></div>
+</div>
+
+<script>
+    const pdfInput = document.getElementById('pdfInput');
+    const processBtn = document.getElementById('processBtn');
+    const status = document.getElementById('status');
+
+    pdfInput.addEventListener('change', () => {
+        if (pdfInput.files.length > 0) {
+            processBtn.disabled = false;
+            status.innerText = `選択済み: ${pdfInput.files[0].name}`;
+        }
+    });
+
+    processBtn.addEventListener('click', async () => {
+        const file = pdfInput.files[0];
+        if (!file) return;
+
+        status.innerText = "処理中...";
+        processBtn.disabled = true;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer);
+        const outPdf = await PDFLib.PDFDocument.create();
+        
+        const pageCount = srcPdf.getPageCount();
+        // 4の倍数に切り上げ
+        const totalPages = Math.ceil(pageCount / 4) * 4;
+        const blankCount = totalPages - pageCount;
+
+        status.innerText = `総ページ数: ${pageCount} (+白紙 ${blankCount}枚) -> 全${totalPages}ページ`;
+
+        // ソースPDFからページをコピー（不足分はnull）
+        const srcPages = await outPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+        const pages = [...srcPages];
+        for (let i = 0; i < blankCount; i++) {
+            pages.push(null); // 白紙フラグ
+        }
+
+        // 冊子印刷の順序に並べ替え
+        const newOrder = [];
+        for (let i = 0; i < totalPages / 2; i++) {
+            if (i % 2 === 0) {
+                // 表：外側(右)と内側(左)
+                newOrder.push(pages[totalPages - 1 - i]);
+                newOrder.push(pages[i]);
+            } else {
+                // 裏：内側(左)と外側(右)
+                newOrder.push(pages[i]);
+                newOrder.push(pages[totalPages - 1 - i]);
+            }
+        }
+
+        // ページを追加
+        for (const page of newOrder) {
+            if (page) {
+                outPdf.addPage(page);
+            } else {
+                outPdf.addPage(); // 空白ページを追加
+            }
+        }
+
+        const pdfBytes = await outPdf.save();
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `booklet_${file.name}`;
+        link.click();
+
+        status.innerText = "完了！ダウンロードされました。";
+        processBtn.disabled = false;
+    });
+</script>
+
+</body>
+</html>
