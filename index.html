@@ -2,51 +2,35 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>PDF Layout & Booklet Maker</title>
+    <title>PDF Booklet Maker</title>
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
     <style>
         body { font-family: sans-serif; padding: 30px; line-height: 1.6; background: #f0f2f5; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 650px; margin: auto; }
-        .upload-area { border: 2px dashed #007bff; padding: 20px; text-align: center; cursor: pointer; margin: 15px 0; border-radius: 8px; background: #fafafa; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        .upload-area { border: 2px dashed #007bff; padding: 20px; text-align: center; cursor: pointer; margin: 20px 0; border-radius: 8px; background: #fafafa; }
         .upload-area:hover { background: #f0f7ff; }
-        .option-group { margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
+        .option-group { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef; }
         .option-title { font-weight: bold; margin-bottom: 8px; font-size: 14px; color: #333; }
-        .radio-label { margin-right: 15px; cursor: pointer; font-size: 14px; display: inline-block; margin-bottom: 5px; }
-        .radio-label input { margin-right: 5px; }
-        .grid-selects { display: flex; gap: 10px; align-items: center; }
-        select { padding: 6px 12px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px; }
-        .btn { background: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; margin-top: 10px; }
+        .radio-label { margin-right: 20px; cursor: pointer; font-size: 15px; }
+        .radio-label input { margin-right: 6px; }
+        .btn { background: #007bff; color: white; padding: 12px 20px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
-        #status { margin-top: 15px; font-weight: bold; color: #555; white-space: pre-wrap; }
+        #status { margin-top: 15px; font-weight: bold; color: #555; }
     </style>
 </head>
 <body>
 
 <div class="card">
-    <h2>PDF レイアウト & 小冊子変換ツール</h2>
-    <p>1ページ1枚のPDFを「小冊子（中綴じ）印刷用」に並べ替えるか、「1枚の用紙に複数ページ配置（面付け）」します。</p>
+    <h2>PDF 小冊子並べ替えツール</h2>
+    <p>1ページ1枚のPDFを、冊子印刷（中綴じ）用の順序に並べ替えます。不足分は自動で白紙を追加します。</p>
     
     <div class="upload-area" onclick="document.getElementById('pdfInput').click()">
         PDFファイルを選択、またはドラッグ＆ドロップ
         <input type="file" id="pdfInput" accept="application/pdf" style="display:none">
     </div>
 
-    <!-- 処理モード選択 -->
     <div class="option-group">
-        <div class="option-title">処理モード:</div>
-        <label class="radio-label">
-            <input type="radio" name="mode" value="booklet" checked onchange="toggleMode()">
-            小冊子モード（中綴じ・2×1固定）
-        </label>
-        <label class="radio-label">
-            <input type="radio" name="mode" value="nup" onchange="toggleMode()">
-            面付けモード（1枚に複数ページ）
-        </label>
-    </div>
-
-    <!-- 小冊子用オプション -->
-    <div class="option-group" id="bookletOptions">
-        <div class="option-title">綴じ方向（開き方）:</div>
+        <div class="option-title">綴じ方向（開き方）を選択:</div>
         <label class="radio-label">
             <input type="radio" name="binding" value="left" checked>
             左閉じ（横書き・左開き）
@@ -55,30 +39,6 @@
             <input type="radio" name="binding" value="right">
             右閉じ（縦書き・右開き）
         </label>
-    </div>
-
-    <!-- 面付け用オプション -->
-    <div class="option-group" id="nupOptions" style="display: none;">
-        <div class="option-title">配置グリッド（行 × 列）:</div>
-        <div class="grid-selects">
-            <label>行（縦）: 
-                <select id="rowsSelect">
-                    <option value="1">1行</option>
-                    <option value="2">2行</option>
-                    <option value="3">3行</option>
-                    <option value="4" selected>4行</option>
-                </select>
-            </label>
-            <span>×</span>
-            <label>列（横）: 
-                <select id="colsSelect">
-                    <option value="1">1列</option>
-                    <option value="2" selected>2列</option>
-                    <option value="3">3列</option>
-                    <option value="4">4列</option>
-                </select>
-            </label>
-        </div>
     </div>
     
     <button id="processBtn" class="btn" disabled>PDFを処理してダウンロード</button>
@@ -91,12 +51,6 @@
     const processBtn = document.getElementById('processBtn');
     const status = document.getElementById('status');
 
-    function toggleMode() {
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        document.getElementById('bookletOptions').style.display = (mode === 'booklet') ? 'block' : 'none';
-        document.getElementById('nupOptions').style.display = (mode === 'nup') ? 'block' : 'none';
-    }
-
     pdfInput.addEventListener('change', () => {
         if (pdfInput.files.length > 0) {
             processBtn.disabled = false;
@@ -108,122 +62,86 @@
         const file = pdfInput.files[0];
         if (!file) return;
 
-        const mode = document.querySelector('input[name="mode"]:checked').value;
-        status.innerText = "PDFをロード中...";
+        // 選択された綴じ方向の取得 ("left" または "right")
+        const bindingDirection = document.querySelector('input[name="binding"]:checked').value;
+
+        status.innerText = "処理中...";
         processBtn.disabled = true;
 
         try {
             const arrayBuffer = await file.arrayBuffer();
             const srcPdf = await PDFLib.PDFDocument.load(arrayBuffer);
             const outPdf = await PDFLib.PDFDocument.create();
+            
+            const pageCount = srcPdf.getPageCount();
+            // 4の倍数に切り上げ
+            const totalPages = Math.ceil(pageCount / 4) * 4;
+            const blankCount = totalPages - pageCount;
 
-            const srcPageCount = srcPdf.getPageCount();
-            if (srcPageCount === 0) throw new Error("ページが存在しません。");
+            status.innerText = `総ページ数: ${pageCount} (+白紙 ${blankCount}枚) -> 全${totalPages}ページ`;
 
-            // 1ページ目のサイズを取得（これを用紙サイズの標準とする）
-            const firstPage = srcPdf.getPage(0);
-            const originalWidth = firstPage.getWidth();
-            const originalHeight = firstPage.getHeight();
+            // ソースPDFからページをコピー（不足分はnull）
+            const srcPages = await outPdf.copyPages(srcPdf, srcPdf.getPageIndices());
+            const pages = [...srcPages];
+            for (let i = 0; i < blankCount; i++) {
+                pages.push(null); // 白紙フラグ
+            }
 
-            if (mode === 'booklet') {
-                // ==================== 小冊子（中綴じ）処理 ====================
-                const bindingDirection = document.querySelector('input[name="binding"]:checked').value;
-                const totalPages = Math.ceil(srcPageCount / 4) * 4;
-                const blankCount = totalPages - srcPageCount;
+            // 冊子印刷の順序に並べ替え
+            const newOrder = [];
+            const sheetCount = totalPages / 4; // 必要な用紙枚数（両面）
 
-                status.innerText = `小冊子作成中...\n総ページ数: ${srcPageCount} (+白紙 ${blankCount}枚) -> 全${totalPages}ページ`;
+            for (let i = 0; i < sheetCount; i++) {
+                // 用紙1枚あたり4ページ（表左, 表右, 裏左, 裏右）を定義
+                const last = totalPages - 1 - (i * 2);
+                const first = i * 2;
 
-                const srcPages = await outPdf.copyPages(srcPdf, srcPdf.getPageIndices());
-                const pages = [...srcPages];
-                for (let i = 0; i < blankCount; i++) pages.push(null);
-
-                const newOrder = [];
-                const sheetCount = totalPages / 4;
-
-                for (let i = 0; i < sheetCount; i++) {
-                    const last = totalPages - 1 - (i * 2);
-                    const first = i * 2;
-                    if (bindingDirection === 'left') {
-                        newOrder.push(pages[last], pages[first], pages[first + 1], pages[last - 1]);
-                    } else {
-                        newOrder.push(pages[first], pages[last], pages[last - 1], pages[first + 1]);
-                    }
-                }
-
-                for (const page of newOrder) {
-                    if (page) {
-                        outPdf.addPage(page);
-                    } else {
-                        outPdf.addPage([originalWidth, originalHeight]);
-                    }
-                }
-
-            } else {
-                // ==================== 面付け (N-up) 処理 ====================
-                const rows = parseInt(document.getElementById('rowsSelect').value, 10);
-                const cols = parseInt(document.getElementById('colsSelect').value, 10);
-                const itemsPerPage = rows * cols;
-
-                status.innerText = `面付け処理中 (${rows}×${cols} 配置)...\n元ページ数: ${srcPageCount}`;
-
-                // 全ページを埋め込み用オブジェクトとして読み込み
-                const embeddedPages = await outPdf.embedPdf(srcPdf, srcPdf.getPageIndices());
-
-                // 用紙サイズは「元の1ページ分と同じ縦横比・サイズ」を基本キャンバスとする
-                const paperWidth = originalWidth;
-                const paperHeight = originalHeight;
-
-                // 1マスあたりのサイズ
-                const cellWidth = paperWidth / cols;
-                const cellHeight = paperHeight / rows;
-
-                for (let i = 0; i < srcPageCount; i += itemsPerPage) {
-                    const newPage = outPdf.addPage([paperWidth, paperHeight]);
-
-                    for (let j = 0; j < itemsPerPage; j++) {
-                        const pageIdx = i + j;
-                        if (pageIdx >= srcPageCount) break;
-
-                        const embed = embeddedPages[pageIdx];
-                        const { width: pWidth, height: pHeight } = embed;
-
-                        // セル内に収まるように縮小率（アスペクト比保持）を計算
-                        const scale = Math.min(cellWidth / pWidth, cellHeight / pHeight);
-                        const scaledW = pWidth * scale;
-                        const scaledH = pHeight * scale;
-
-                        // 行と列の位置計算 (左上が1番目)
-                        const row = Math.floor(j / cols); // 0-indexed (上から)
-                        const col = j % cols;             // 0-indexed (左から)
-
-                        // PDFの座標系は左下が(0,0)のため、Y座標を反転計算
-                        const x = col * cellWidth + (cellWidth - scaledW) / 2;
-                        const y = paperHeight - ((row + 1) * cellHeight) + (cellHeight - scaledH) / 2;
-
-                        newPage.drawPage(embed, {
-                            x: x,
-                            y: y,
-                            width: scaledW,
-                            height: scaledH
-                        });
-                    }
+                if (bindingDirection === 'left') {
+                    // --- 左閉じ（横書き） ---
+                    // 表面：[末尾, 先頭] (表紙が右)
+                    newOrder.push(pages[last]);
+                    newOrder.push(pages[first]);
+                    // 裏面：[先頭+1, 末尾-1]
+                    newOrder.push(pages[first + 1]);
+                    newOrder.push(pages[last - 1]);
+                } else {
+                    // --- 右閉じ（縦書き） ---
+                    // 表面：[先頭, 末尾] (表紙が左)
+                    newOrder.push(pages[first]);
+                    newOrder.push(pages[last]);
+                    // 裏面：[末尾-1, 先頭+1]
+                    newOrder.push(pages[last - 1]);
+                    newOrder.push(pages[first + 1]);
                 }
             }
 
-            // 出力・ダウンロード
+            // ページを追加（白紙の場合は同じサイズの空白ページを生成）
+            for (let i = 0; i < newOrder.length; i++) {
+                const page = newOrder[i];
+                if (page) {
+                    outPdf.addPage(page);
+                } else {
+                    // 基準ページサイズに合わせて白紙ページを追加
+                    const firstValidPage = srcPages.find(p => p !== null);
+                    const width = firstValidPage ? firstValidPage.getWidth() : 595.28; // A4標準幅
+                    const height = firstValidPage ? firstValidPage.getHeight() : 841.89; // A4標準高
+                    outPdf.addPage([width, height]);
+                }
+            }
+
             const pdfBytes = await outPdf.save();
             const blob = new Blob([pdfBytes], { type: 'application/pdf' });
             const url = URL.createObjectURL(blob);
             
             const link = document.createElement('a');
             link.href = url;
-            link.download = `${mode === 'booklet' ? 'booklet' : 'nup'}_${file.name}`;
+            link.download = `booklet_${bindingDirection}_${file.name}`;
             link.click();
 
             status.innerText = "完了！ダウンロードされました。";
         } catch (error) {
             console.error(error);
-            status.innerText = `エラーが発生しました:\n${error.message}`;
+            status.innerText = `エラーが発生しました: ${error.message}`;
         } finally {
             processBtn.disabled = false;
         }
